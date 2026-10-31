@@ -7,7 +7,7 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F5F7FB] flex">
+    <div className="min-h-screen bg-[#F0F6FF] flex">
       {/* Persistent Left Sidebar */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -20,7 +20,7 @@ export default function DashboardLayout() {
         </main>
 
         {/* Global Footer */}
-        <footer className="py-4 px-8 border-t border-slate-200/60 bg-white/50 text-center text-xs text-slate-400">
+        <footer className="py-4 px-8 border-t border-blue-200/60 bg-[#EBF3FF]/60 text-center text-xs text-blue-700">
           <p>
             MediRoute 24/7 • Intelligent Emergency Ambulance Dispatch & Hospital Coordination
           </p>

@@ -36,17 +36,12 @@ export const authApi = {
         console.warn('Backend server unreachable. Engaging offline fallback demo session.');
         
         let demoRole = 'CLIENT';
-        let ambId = null;
         let stnId = 'STN_CENTRAL';
 
         if (username.toLowerCase() === 'admin' && password === 'admin123') {
           demoRole = 'ADMIN';
-        } else if (username.toLowerCase().startsWith('driver') && password === 'driver123') {
-          demoRole = 'DRIVER';
-          ambId = username === 'driver3' ? 'AMB_ALS_02' : 'AMB_ALS_01';
-          stnId = username === 'driver3' ? 'STN_NORTH' : 'STN_CENTRAL';
         } else {
-          throw new Error('Invalid username or password. Use demo quick-login.');
+          throw new Error('Invalid username or password. Default admin: admin / admin123');
         }
 
         const fallbackUser = {
@@ -55,7 +50,6 @@ export const authApi = {
           role: demoRole,
           user_id: `USR_${username.toUpperCase()}`,
           username: username,
-          ambulance_id: ambId,
           station_id: stnId,
           is_offline_demo: true
         };
@@ -147,28 +141,7 @@ export const emergencyApi = {
   }
 };
 
-// 3. DRIVER APIs (Driver login required)
-export const driverApi = {
-  async getMyDispatch() {
-    const response = await apiClient.get('/driver/my-dispatch');
-    return response.data;
-  },
-
-  async updateStatus(status, note = null) {
-    const response = await apiClient.post('/driver/status', { status, note });
-    return response.data;
-  },
-
-  async updateLocation(coordinate, speedKmh = null) {
-    const response = await apiClient.post('/driver/location', {
-      current_coordinate: coordinate,
-      speed_kmh: speedKmh
-    });
-    return response.data;
-  }
-};
-
-// 4. ADMIN APIs (Admin login required)
+// 3. ADMIN APIs (Admin login required)
 export const adminApi = {
   async getOverview() {
     const response = await apiClient.get('/admin/overview');
@@ -208,7 +181,7 @@ export const adminApi = {
   }
 };
 
-// 5. SIMULATION APIs (Roadblocks & Congestion)
+// 4. SIMULATION APIs (Roadblocks & Congestion)
 export const simulationApi = {
   async toggleRoadblock(uNode, vNode, isBlocked, reason = 'Obstruction on route') {
     const response = await apiClient.post('/simulate/roadblock', {
@@ -238,13 +211,6 @@ export const ambulanceApi = {
     } catch {
       const mapData = await publicApi.getMapData();
       return mapData.ambulances || [];
-    }
-  },
-  async updateStatus(id, status, extra = {}) {
-    try {
-      return await driverApi.updateStatus(status);
-    } catch {
-      return null;
     }
   }
 };

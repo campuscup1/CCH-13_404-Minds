@@ -21,29 +21,28 @@ export default function Sidebar({ isOpen, onClose }) {
   const unreadCount = (notifications || []).filter(n => !n.isRead).length;
   const userRole = currentUser?.role || 'CLIENT';
 
-  // Clean, focused navigation tabs per role
+  // Driver role is exclusively on Mobile App; disallow on website
+  React.useEffect(() => {
+    if (userRole === 'DRIVER') {
+      logoutUser();
+      navigate('/login');
+    }
+  }, [userRole]);
+
+  // Clean, focused navigation tabs per role (Admin & Public Client)
   let navItems = [];
 
   if (userRole === 'ADMIN') {
     navItems = [
-      { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
+      { name: 'Command Center', to: '/dashboard', icon: LayoutDashboard },
       { name: 'Active Dispatches', to: '/journey-tracking', icon: Radio },
+      { name: 'Ambulance Fleet', to: '/ambulances', icon: Ambulance },
+      { name: 'Dispatch Stations', to: '/stations', icon: Building2 },
+      { name: 'Hospitals & ICU Beds', to: '/hospitals', icon: HeartPulse },
       { name: 'Traffic Simulator', to: '/dynamic-routing', icon: GitFork },
+      { name: 'Emergency Intake', to: '/emergencies', icon: AlertTriangle },
       {
         name: 'Notifications',
-        to: '/notifications',
-        icon: Bell,
-        badge: unreadCount > 0 ? unreadCount : null
-      }
-    ];
-  } else if (userRole === 'DRIVER') {
-    navItems = [
-      { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-      { name: 'My Active Mission', to: '/journey-tracking', icon: Radio },
-      { name: 'Ambulance Fleet', to: '/ambulances', icon: Ambulance },
-      { name: 'Hospital Network', to: '/hospitals', icon: Building2 },
-      {
-        name: 'Alerts',
         to: '/notifications',
         icon: Bell,
         badge: unreadCount > 0 ? unreadCount : null
@@ -94,7 +93,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 MediRoute
               </span>
               <span className="text-[10px] font-black ml-1 px-1.5 py-0.5 rounded bg-blue-600 text-white">
-                24/7
+                ADMIN
               </span>
             </div>
           </div>
@@ -148,9 +147,12 @@ export default function Sidebar({ isOpen, onClose }) {
             >
               <div className="flex items-center space-x-2">
                 <div className="w-6 h-6 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center font-bold text-[10px]">
-                  {currentUser.username ? currentUser.username[0].toUpperCase() : 'U'}
+                  {currentUser.username ? currentUser.username[0].toUpperCase() : 'A'}
                 </div>
-                <span className="truncate max-w-[120px]">{currentUser.username}</span>
+                <div className="text-left">
+                  <span className="truncate max-w-[100px] block leading-tight font-extrabold text-slate-800">{currentUser.username}</span>
+                  <span className="text-[9px] text-blue-600 font-bold uppercase">{currentUser.role || 'Admin'}</span>
+                </div>
               </div>
               <LogOut className="w-4 h-4" />
             </button>
@@ -159,7 +161,7 @@ export default function Sidebar({ isOpen, onClose }) {
               onClick={() => navigate('/login')}
               className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition text-center"
             >
-              Sign In
+              Sign In as Admin
             </button>
           )}
         </div>

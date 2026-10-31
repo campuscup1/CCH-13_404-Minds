@@ -1,16 +1,73 @@
-# Python
+# ==========================================
+# MediRoute EMS - Comprehensive .gitignore
+# ==========================================
+
+# 1. Node.js & Web Frontend
+**/node_modules/
+node_modules/
+**/dist/
+dist/
+**/.vite/
+.vite/
+**/out/
+out/
+.next/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json.bak
+
+# 2. Flutter & Dart Mobile App
+**/.dart_tool/
+.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/build/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android / iOS Binary Artifacts & Symbols
+**/*.apk
+**/*.aab
+**/*.symbols
+**/*.map.json
+app.*.symbols
+app.*.map.json
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/app/build/
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Pods/
+
+# 3. Gradle & Android Build Tools
+**/.gradle/
+.gradle/
+**/local.properties
+**/captures/
+.externalNativeBuild/
+.cxx/
+
+# 4. Python & Backend
+**/__pycache__/
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -25,38 +82,46 @@ MANIFEST
 .coverage
 htmlcov/
 
-# Environments
-.env
-.env.local
-.env.*.local
+# Python Virtual Environments
 venv/
+.venv/
 env/
 ENV/
 env.bak/
 venv.bak/
-.venv/
 
-# Node & Frontend
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-.next/
-out/
-build/
-.vite/
-dist/
-
-# Databases
+# Databases & Runtime State
 *.db
 *.sqlite
 *.sqlite3
+backend/emergency.db
 
-# OS & IDE
+# 5. Environment & Secret Keys
+.env
+.env.local
+.env.*.local
+*.env
+
+# 6. Operating System & IDEs
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# JetBrains / IntelliJ / Android Studio
+**/.idea/
 .idea/
+*.iml
+*.ipr
+*.iws
+
+# Visual Studio Code
+**/.vscode/
 .vscode/
+*.code-workspace
+
+# Editor Swap Files
 *.swp
 *.swo
+*~

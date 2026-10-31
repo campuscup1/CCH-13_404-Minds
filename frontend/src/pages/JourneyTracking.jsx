@@ -2,10 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Radio,
-  Play,
-  Pause,
-  RotateCcw,
-  SkipForward,
   CheckCircle2,
   Clock,
   Compass,
@@ -18,12 +14,13 @@ import {
   Info,
   ShieldCheck,
   MapPin,
-  RefreshCw
+  RefreshCw,
+  Navigation
 } from 'lucide-react';
 import MapView, { toLatLng } from '../components/MapView';
 import StatusBadge from '../components/StatusBadge';
 import { useApp } from '../context/AppContext';
-import { emergencyApi, driverApi } from '../services/api';
+import { emergencyApi } from '../services/api';
 
 export default function JourneyTracking() {
   const { id } = useParams();
@@ -39,7 +36,6 @@ export default function JourneyTracking() {
 
   const [backendIncident, setBackendIncident] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [driverActionLoading, setDriverActionLoading] = useState(false);
 
   // 1. Fetch live emergency incident from backend API
   const targetId = id || activeJourney?.emergencyId || (emergencies.length > 0 ? emergencies[0].id : null);
@@ -134,69 +130,57 @@ export default function JourneyTracking() {
     }
   }
 
-  // Driver action triggers
-  const handleDriverStatusUpdate = async (newStatus) => {
-    try {
-      setDriverActionLoading(true);
-      await driverApi.updateStatus(newStatus);
-      await fetchLiveIncident();
-      await refreshAllData();
-    } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to update driver status. Ensure you are logged in as a driver.');
-    } finally {
-      setDriverActionLoading(false);
-    }
-  };
-
   const isRerouted = activeRoute?.is_rerouted;
   const detourReason = activeRoute?.reroute_reason;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 font-sans">
       {/* Top Header */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
             <span className="p-1.5 rounded-lg bg-blue-100 text-blue-800">
-              <Radio className="w-4 h-4 animate-pulse" />
+              <Radio className="w-5 h-5 animate-pulse text-blue-600" />
             </span>
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
-              Live Mission Telemetry
-            </span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-mono font-bold">
-              {emergency?.id || 'NO ACTIVE CALL'}
+            <span className="text-[11px] font-black uppercase tracking-wider text-blue-800 bg-blue-50 px-2.5 py-1 rounded-md">
+              LIVE MISSION TELEMETRY
             </span>
           </div>
-          <h1 className="text-2xl font-black text-[#102A43] tracking-tight mt-1">
-            Two-Stage Emergency Journey Tracking
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1">
+            Emergency Tracking: {emergency?.id || 'Active Mission'}
           </h1>
-          <p className="text-xs text-slate-500">
-            Real-time ambulance dispatch to scene & hospital transfer monitoring
+          <p className="text-xs text-slate-500 mt-0.5">
+            Real-time GPS coordinates, dynamic Bidirectional A* routing, and hospital telemetry.
           </p>
         </div>
 
-        <button
-          onClick={fetchLiveIncident}
-          className="flex items-center space-x-2 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Sync Backend</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => { fetchLiveIncident(); refreshAllData(); }}
+            className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-blue-600' : ''}`} />
+            <span>Sync Live</span>
+          </button>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="px-4 py-2 rounded-xl bg-[#102A43] hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition"
+          >
+            Back to Command Center
+          </button>
+        </div>
       </div>
 
-      {/* Dynamic Roadblock / Detour Alert Banner */}
+      {/* Dynamic Detour / Reroute Notification Banner */}
       {isRerouted && (
-        <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 text-xs flex items-start space-x-3 shadow-md">
+        <div className="p-4 bg-amber-500/15 border-2 border-amber-500 rounded-3xl flex items-start space-x-3 text-amber-950 shadow-md">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <p className="font-extrabold text-amber-900 text-sm">
-              DYNAMIC DETOUR ACTIVATED: Road Recalculation Triggered!
-            </p>
-            <p className="text-amber-800 leading-relaxed font-medium">
-              {detourReason || 'Obstacle or congestion detected on initial path. The system dynamically bypassed the obstruction using Bidirectional A*.'}
-            </p>
-            <p className="text-[11px] font-mono text-amber-900">
-              Revised Path Nodes: {activeRoute?.path_nodes?.join(' ➔ ') || 'Detour computed'}
+          <div className="text-xs">
+            <span className="font-extrabold uppercase tracking-wider text-[11px] text-amber-900 block">
+              Dynamic Detour Triggered (Bidirectional A* Recalculation)
+            </span>
+            <p className="font-medium text-amber-900 mt-0.5">
+              {detourReason || 'Obstacle detected on planned trajectory. Recalculated bypass automatically.'}
             </p>
           </div>
         </div>
@@ -324,7 +308,7 @@ export default function JourneyTracking() {
           </div>
         </div>
 
-        {/* Right: Driver Controls & Recommendations */}
+        {/* Right: Telemetry & Recommendations */}
         <div className="lg:col-span-5 space-y-6">
           {/* Mission Details Card */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
@@ -366,58 +350,30 @@ export default function JourneyTracking() {
               </div>
             </div>
 
-            {/* DRIVER ROLE CONTROLS */}
-            <div className="pt-2 border-t border-slate-100 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-700 uppercase">
-                  Driver Controls (Role: {currentUser?.role || 'Guest'})
+            {/* Live Operational Status */}
+            <div className="pt-2 border-t border-slate-100">
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                  Mission Status Telemetry
                 </span>
-                {currentUser?.role !== 'DRIVER' && (
-                  <span className="text-[10px] text-amber-600 font-semibold">
-                    (Login as driver to execute)
+                <div className="flex items-center space-x-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-extrabold text-slate-800 text-xs">
+                    {emergency?.journey_stage || 'DISPATCH_IN_PROGRESS'}
                   </span>
-                )}
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  {isCompleted
+                    ? 'Patient safely admitted to destination facility. Journey successfully completed.'
+                    : isStage2
+                    ? 'Stage 2 transfer active. Patient en-route to recommended hospital emergency department.'
+                    : 'Stage 1 dispatch active. Paramedic unit en-route to incident location.'}
+                </p>
               </div>
-
-              {!isStage2 && !isCompleted && (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    disabled={driverActionLoading}
-                    onClick={() => handleDriverStatusUpdate('ARRIVED_AT_SCENE')}
-                    className="py-2.5 px-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs transition"
-                  >
-                    1. Arrived at Scene
-                  </button>
-                  <button
-                    disabled={driverActionLoading}
-                    onClick={() => handleDriverStatusUpdate('PICKUP_CONFIRMED')}
-                    className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md transition"
-                  >
-                    2. Confirm Pickup ➔
-                  </button>
-                </div>
-              )}
-
-              {isStage2 && !isCompleted && (
-                <button
-                  disabled={driverActionLoading}
-                  onClick={() => handleDriverStatusUpdate('ARRIVED_AT_HOSPITAL')}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-500/20 transition flex items-center justify-center space-x-2"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Arrived at Hospital & Admit Patient</span>
-                </button>
-              )}
-
-              {isCompleted && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 font-bold text-center text-xs">
-                  Journey Completed! Patient admitted & ambulance released.
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Hospital Recommendation Breakdown (When Stage 2 reached) */}
+          {/* Hospital Recommendation Breakdown */}
           {emergency?.hospital_recommendations && emergency.hospital_recommendations.length > 0 && (
             <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-3">
               <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center justify-between pb-2 border-b border-slate-100">
@@ -439,22 +395,25 @@ export default function JourneyTracking() {
                           : 'bg-slate-50 border-slate-200 opacity-80'
                       }`}
                     >
-                      <div className="flex items-center justify-between font-bold">
-                        <span className="text-slate-900 flex items-center space-x-1.5">
-                          {isTop && <ShieldCheck className="w-4 h-4 text-emerald-600" />}
-                          <span>{rec.hospital.name}</span>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-slate-900">
+                          {idx + 1}. {rec.hospital.name}
                         </span>
-                        <span className={isTop ? 'text-emerald-700 font-extrabold' : 'text-slate-600'}>
-                          Score: {rec.composite_score}
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                          isTop ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'
+                        }`}>
+                          Score: {Math.round(rec.composite_score)}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-1">{rec.reason}</p>
-                      <div className="flex items-center space-x-4 text-[10px] text-slate-600 font-semibold mt-1.5">
-                        <span>ICU: {rec.hospital.available_icu_beds} open</span>
+                      <p className="text-[11px] text-slate-600 leading-snug">
+                        {rec.recommendation_reason}
+                      </p>
+                      <div className="mt-1.5 flex items-center space-x-3 text-[10px] font-semibold text-slate-500">
+                        <span>ETA: {rec.transit_eta_minutes} mins</span>
                         <span>•</span>
-                        <span>ER: {rec.hospital.available_er_beds} open</span>
+                        <span>ICU: {rec.hospital.available_icu_beds} beds</span>
                         <span>•</span>
-                        <span>ETA: {rec.eta_minutes} mins</span>
+                        <span>ER: {rec.hospital.available_er_beds} beds</span>
                       </div>
                     </div>
                   );

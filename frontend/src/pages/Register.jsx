@@ -39,14 +39,14 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#102A43] via-[#0B1E33] to-[#061325] flex flex-col justify-center items-center p-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-700/50">
-        <div className="bg-[#0B1E33] p-6 text-center border-b border-slate-800">
-          <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center mx-auto shadow-lg shadow-blue-500/30 mb-2">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-100 to-blue-200 flex flex-col justify-center items-center p-4 font-sans">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-blue-500/10 overflow-hidden border border-blue-200">
+        <div className="bg-gradient-to-r from-blue-600 to-sky-600 p-6 text-center text-white">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center mx-auto shadow-md mb-2">
             <ShieldAlert className="w-6 h-6 text-white" />
           </div>
-          <h2 className="text-xl font-extrabold text-white">Create EMS Account</h2>
-          <p className="text-xs text-slate-400">Register as a dispatcher or hospital administrator</p>
+          <h2 className="text-xl font-black text-white">Create EMS Account</h2>
+          <p className="text-xs text-blue-100">Register as a dispatcher or hospital administrator</p>
         </div>
 
         <div className="p-6">
@@ -59,103 +59,110 @@ export default function Register() {
 
           <form onSubmit={handleRegister} className="space-y-3.5">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-blue-950 uppercase tracking-wider mb-1">
                 Full Name
               </label>
               <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <User className="w-4 h-4 text-blue-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Dr. Rajesh Deshpande"
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder="Officer Rajesh Kumar"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-blue-200 bg-blue-50/30 text-xs text-blue-950 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
-              {errors.name && <p className="text-[11px] text-red-500 mt-0.5">{errors.name}</p>}
+              {errors.name && <p className="text-[11px] text-blue-800 font-bold mt-1">{errors.name}</p>}
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Official Email
+              <label className="block text-xs font-bold text-blue-950 uppercase tracking-wider mb-1">
+                Work Email Address
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-blue-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="deshpande@solapur-ems.gov.in"
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder="dispatch@ems-command.org"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-blue-200 bg-blue-50/30 text-xs text-blue-950 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
-              {errors.email && <p className="text-[11px] text-red-500 mt-0.5">{errors.email}</p>}
+              {errors.email && <p className="text-[11px] text-blue-800 font-bold mt-1">{errors.email}</p>}
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-bold text-blue-950 uppercase tracking-wider mb-1">
+                Role Designation
+              </label>
+              <div className="relative">
+                <Building className="w-4 h-4 text-blue-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-blue-200 bg-blue-50/30 text-xs text-blue-950 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                >
+                  <option value="Chief Dispatch Officer">Chief Dispatch Officer</option>
+                  <option value="Station Supervisor">Ambulance Station Supervisor</option>
+                  <option value="ER Bed Administrator">Hospital ER Bed Administrator</option>
+                  <option value="Lead Paramedic">Fleet Lead Paramedic</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-blue-950 uppercase tracking-wider mb-1">
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-blue-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-blue-200 bg-blue-50/30 text-xs text-blue-950 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 </div>
-                {errors.password && <p className="text-[11px] text-red-500 mt-0.5">{errors.password}</p>}
+                {errors.password && <p className="text-[10px] text-blue-800 font-bold mt-0.5">{errors.password}</p>}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-blue-950 uppercase tracking-wider mb-1">
                   Confirm
                 </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-blue-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-blue-200 bg-blue-50/30 text-xs text-blue-950 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
                 {errors.confirmPassword && (
-                  <p className="text-[11px] text-red-500 mt-0.5">{errors.confirmPassword}</p>
+                  <p className="text-[10px] text-blue-800 font-bold mt-0.5">{errors.confirmPassword}</p>
                 )}
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Assigned Role
-              </label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-medium text-slate-700 bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-              >
-                <option value="Chief Dispatch Officer">Chief Dispatch Officer</option>
-                <option value="Hospital Administrator">Hospital Administrator</option>
-                <option value="Paramedic Field Team">Paramedic Field Team</option>
-              </select>
-            </div>
-
             <button
               type="submit"
-              className="w-full mt-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/30 transition transform active:scale-98"
+              className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition mt-2"
             >
-              Register & Launch Console
+              Complete Registration
             </button>
           </form>
+        </div>
 
-          <div className="mt-5 text-center text-xs text-slate-500">
-            Already have an account?{' '}
-            <Link to="/login" className="text-blue-600 font-bold hover:underline">
-              Log in here
-            </Link>
-          </div>
+        <div className="bg-blue-50/60 px-6 py-3 border-t border-blue-100 text-center text-xs text-blue-700">
+          Already have an operational account?{' '}
+          <Link to="/login" className="text-blue-600 font-bold hover:underline">
+            Sign in
+          </Link>
         </div>
       </div>
     </div>

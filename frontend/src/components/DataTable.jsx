@@ -26,9 +26,18 @@ export default function DataTable({
       );
 
     // Dropdown filter matching
+    const sel = selectedFilter.toLowerCase();
+    const targetVal = filterField && item[filterField] ? String(item[filterField]).toLowerCase() : '';
+    const statusVal = item.status ? String(item.status).toLowerCase() : '';
+    const priorityVal = item.priority ? String(item.priority).toLowerCase() : '';
+    const severityVal = item.severity ? String(item.severity).toLowerCase() : '';
+
     const matchesFilter =
       selectedFilter === 'ALL' ||
-      (filterField && String(item[filterField]).toLowerCase() === selectedFilter.toLowerCase());
+      targetVal === sel ||
+      statusVal === sel ||
+      priorityVal === sel ||
+      severityVal === sel;
 
     return matchesSearch && matchesFilter;
   });

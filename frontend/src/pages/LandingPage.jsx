@@ -189,7 +189,7 @@ export default function LandingPage() {
               className="text-[11px] text-slate-300 hover:text-white flex items-center space-x-1 font-semibold transition"
             >
               <Lock className="w-3 h-3 text-slate-400" />
-              <span>{currentUser?.role ? `Staff Portal (${currentUser.role})` : 'Staff / Driver Login'}</span>
+              <span>{currentUser?.role ? `Admin Portal (${currentUser.role})` : 'Admin Portal'}</span>
             </button>
           </div>
         </div>

@@ -4,7 +4,6 @@ import {
   authApi,
   publicApi,
   emergencyApi,
-  driverApi,
   adminApi,
   simulationApi
 } from '../services/api';
@@ -19,26 +18,15 @@ export function AppProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [activeJourney, setActiveJourney] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [adminOverview, setAdminOverview] = useState(null);
   const [roadGraph, setRoadGraph] = useState({ nodes: [], edges: [] });
-  const [drivers, setDrivers] = useState(() => {
-    const saved = localStorage.getItem('mediroute_drivers_v1');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { /* use default */ }
-    }
-    return [
-      { id: 'DRV_01', name: 'Suresh Patil', phone: '+91-98220-11221', stationId: 'STN_CENTRAL', stationName: 'Central Station 01', assignedAmbulance: 'AMB_ALS_01', status: 'ON_DUTY', shift: 'Day (08:00 - 20:00)' },
-      { id: 'DRV_02', name: 'Rajesh Shinde', phone: '+91-98220-33442', stationId: 'STN_CENTRAL', stationName: 'Central Station 01', assignedAmbulance: 'AMB_BLS_01', status: 'ON_DUTY', shift: 'Day (08:00 - 20:00)' },
-      { id: 'DRV_03', name: 'Amit Kulkarni', phone: '+91-98220-55663', stationId: 'STN_NORTH', stationName: 'North Ring Station 02', assignedAmbulance: 'AMB_ALS_02', status: 'STANDBY', shift: 'Night (20:00 - 08:00)' },
-      { id: 'DRV_04', name: 'Vikram Deshmukh', phone: '+91-98220-77884', stationId: 'STN_NORTH', stationName: 'North Ring Station 02', assignedAmbulance: 'AMB_BLS_02', status: 'ON_DUTY', shift: 'Day (08:00 - 20:00)' }
-    ];
-  });
 
   // Road graph dynamic conditions
   const [blockedEdgeIds, setBlockedEdgeIds] = useState(new Set());
   const [trafficMultipliers, setTrafficMultipliers] = useState({});
   const [algorithmPreference, setAlgorithmPreference] = useState('Bidirectional A*');
 
-  // Load user session and backend data on mount
+  // Load user session on mount
   useEffect(() => {
     const savedUser = localStorage.getItem('user_session');
     if (savedUser) {
@@ -53,76 +41,143 @@ export function AppProvider({ children }) {
 
   const refreshAllData = async () => {
     try {
-      // 1. Fetch public map data (Nodes, Edges, Stations, Hospitals, Ambulances)
-      const mapData = await publicApi.getMapData();
+      // 1. Fetch public map data for road graph & base topology
+      const mapData = await publicApi.getMapData().catch(() => null);
       if (mapData) {
-        if (mapData.stations) {
-          // Normalize coordinates
-          const normalizedStations = mapData.stations.map(s => ({
-            ...s,
-            coords: [s.coordinate.lat, s.coordinate.lon]
-          }));
-          setStations(normalizedStations);
-        }
-
-        if (mapData.hospitals) {
-          const normalizedHospitals = mapData.hospitals.map(h => ({
-            ...h,
-            coords: [h.coordinate.lat, h.coordinate.lon],
-            availableEmergencyBeds: h.available_er_beds,
-            availableIcuBeds: h.available_icu_beds,
-            totalEmergencyBeds: h.total_er_beds,
-            totalIcuBeds: h.total_icu_beds,
-            hasICU: h.total_icu_beds > 0,
-            hasTraumaUnit: h.trauma_level === 1
-          }));
-          setHospitals(normalizedHospitals);
-        }
-
-        if (mapData.ambulances) {
-          const normalizedAmbulances = mapData.ambulances.map(a => ({
-            ...a,
-            vehicleNumber: a.vehicle_number,
-            type: a.vehicle_type,
-            coords: [a.current_location.lat, a.current_location.lon],
-            currentNodeId: a.current_node_id || 'N1'
-          }));
-          setAmbulances(normalizedAmbulances);
-        }
-
         if (mapData.nodes && mapData.edges) {
           setRoadGraph({ nodes: mapData.nodes, edges: mapData.edges });
-          // Sync blocked edges
           const blocked = new Set();
           mapData.edges.forEach(e => {
             if (e.is_blocked) blocked.add(`${e.u}-${e.v}`);
           });
           setBlockedEdgeIds(blocked);
         }
+
+        // Base fallback stations
+        if (mapData.stations) {
+          setStations(mapData.stations.map(s => ({
+            ...s,
+            coords: [s.coordinate?.lat || 12.9352, s.coordinate?.lon || 77.6145],
+            totalAmbulances: s.available_ambulances_count || 2,
+            location: `Nearest Node: ${s.nearest_node_id}`
+          })));
+        }
+
+        // Base fallback hospitals
+        if (mapData.hospitals) {
+          setHospitals(mapData.hospitals.map(h => ({
+            ...h,
+            coords: [h.coordinate?.lat || 12.9716, h.coordinate?.lon || 77.5946],
+            availableEmergencyBeds: h.available_er_beds,
+            availableIcuBeds: h.available_icu_beds,
+            totalEmergencyBeds: h.total_er_beds,
+            totalIcuBeds: h.total_icu_beds,
+            hasICU: h.total_icu_beds > 0,
+            hasTraumaUnit: h.trauma_level === 1
+          })));
+        }
+
+        // Base fallback ambulances
+        if (mapData.ambulances) {
+          setAmbulances(mapData.ambulances.map(a => ({
+            ...a,
+            vehicleNumber: a.vehicle_number,
+            type: a.vehicle_type,
+            coords: [a.current_location?.lat || 12.9352, a.current_location?.lon || 77.6145],
+            currentNodeId: a.current_node_id || 'N1'
+          })));
+        }
       }
 
-      // 2. Fetch role-specific data if authenticated
+      // 2. Fetch authenticated Admin data if logged in
       const token = localStorage.getItem('access_token');
       const userStr = localStorage.getItem('user_session');
+
       if (token && userStr) {
         const user = JSON.parse(userStr);
         if (user.role === 'ADMIN') {
-          const adminEmergencies = await adminApi.getEmergencies();
-          if (adminEmergencies && adminEmergencies.length > 0) {
-            setEmergencies(adminEmergencies);
+          // A. Fetch Admin Overview Telemetry
+          try {
+            const overview = await adminApi.getOverview();
+            if (overview) {
+              setAdminOverview(overview);
+            }
+          } catch (e) {
+            console.warn('Admin overview fetch warning', e);
           }
-        } else if (user.role === 'DRIVER') {
-          const dispatch = await driverApi.getMyDispatch();
-          if (dispatch?.active_emergency) {
-            setActiveJourney({
-              emergencyId: dispatch.active_emergency.id,
-              emergency: dispatch.active_emergency,
-              ambulanceId: dispatch.ambulance?.id,
-              ambulance: dispatch.ambulance,
-              stageName: dispatch.active_emergency.journey_stage,
-              pickupRoute: dispatch.active_emergency.stage1_route,
-              hospitalRoute: dispatch.active_emergency.stage2_route
-            });
+
+          // B. Fetch Admin Stations
+          try {
+            const adminStations = await adminApi.getStations();
+            if (adminStations && adminStations.length > 0) {
+              setStations(adminStations.map(s => ({
+                ...s,
+                coords: [s.coordinate?.lat || 12.9352, s.coordinate?.lon || 77.6145],
+                totalAmbulances: s.available_ambulances_count || s.total_bays || 2,
+                location: `Nearest Junction: ${s.nearest_node_id}`
+              })));
+            }
+          } catch (e) {
+            console.warn('Admin stations fetch warning', e);
+          }
+
+          // C. Fetch Admin Ambulances Fleet
+          try {
+            const adminAmbs = await adminApi.getAmbulances();
+            if (adminAmbs && adminAmbs.length > 0) {
+              setAmbulances(adminAmbs.map(a => ({
+                ...a,
+                vehicleNumber: a.vehicle_number,
+                type: a.vehicle_type,
+                coords: [a.current_location?.lat || 12.9352, a.current_location?.lon || 77.6145],
+                currentNodeId: a.current_node_id || 'N1'
+              })));
+            }
+          } catch (e) {
+            console.warn('Admin ambulances fetch warning', e);
+          }
+
+          // D. Fetch Admin Hospitals
+          try {
+            const adminHosps = await adminApi.getHospitals();
+            if (adminHosps && adminHosps.length > 0) {
+              setHospitals(adminHosps.map(h => ({
+                ...h,
+                coords: [h.coordinate?.lat || 12.9716, h.coordinate?.lon || 77.5946],
+                availableEmergencyBeds: h.available_er_beds,
+                availableIcuBeds: h.available_icu_beds,
+                totalEmergencyBeds: h.total_er_beds,
+                totalIcuBeds: h.total_icu_beds,
+                hasICU: h.total_icu_beds > 0,
+                hasTraumaUnit: h.trauma_level === 1
+              })));
+            }
+          } catch (e) {
+            console.warn('Admin hospitals fetch warning', e);
+          }
+
+          // E. Fetch Admin Emergencies
+          try {
+            const adminEmergencies = await adminApi.getEmergencies();
+            if (adminEmergencies) {
+              setEmergencies(adminEmergencies);
+              if (adminEmergencies.length > 0) {
+                const active = adminEmergencies.find(e => e.journey_stage !== 'COMPLETED') || adminEmergencies[0];
+                if (active) {
+                  setActiveJourney({
+                    emergencyId: active.id,
+                    emergency: active,
+                    ambulanceId: active.assigned_ambulance_id,
+                    hospitalId: active.destination_hospital_id,
+                    stageName: active.journey_stage,
+                    pickupRoute: active.stage1_route,
+                    hospitalRoute: active.stage2_route
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('Admin emergencies fetch warning', e);
           }
         }
       } else {
@@ -134,7 +189,6 @@ export function AppProvider({ children }) {
       setNotifications(storageService.getNotifications());
     } catch (err) {
       console.warn('Backend connection notice - using fallback seeds where needed', err);
-      // Graceful fallback to storageService
       setAmbulances(storageService.getAmbulances());
       setHospitals(storageService.getHospitals());
       setStations(storageService.getStations());
@@ -147,10 +201,8 @@ export function AppProvider({ children }) {
   // Add new emergency (Client / Public or Dispatcher)
   const addEmergency = async (formValues) => {
     try {
-      // Direct call to backend emergency intake & dispatch
       const createdIncident = await emergencyApi.create(formValues);
 
-      // Create journey state from backend response
       const journeyState = {
         emergencyId: createdIncident.id,
         emergency: createdIncident,
@@ -165,11 +217,8 @@ export function AppProvider({ children }) {
 
       setActiveJourney(journeyState);
       storageService.saveActiveJourney(journeyState);
-
-      // Update emergency list
       setEmergencies(prev => [createdIncident, ...prev]);
 
-      // Notification
       storageService.addNotification({
         title: 'Emergency Dispatched',
         message: `${createdIncident.category} emergency reported. Assigned vehicle: ${createdIncident.assigned_ambulance_id || 'Pending'}.`,
@@ -182,63 +231,15 @@ export function AppProvider({ children }) {
       return createdIncident;
     } catch (err) {
       console.error('Error submitting emergency to backend:', err);
-      // Fallback
       return null;
     }
   };
 
-  // Driver confirms patient pickup
-  const confirmPatientPickup = async (emergencyId) => {
-    try {
-      const response = await driverApi.updateStatus('PICKUP_CONFIRMED');
-      if (response && response.emergency) {
-        const updatedInc = response.emergency;
-        const journey = {
-          emergencyId: updatedInc.id,
-          emergency: updatedInc,
-          ambulanceId: updatedInc.assigned_ambulance_id,
-          hospitalId: updatedInc.destination_hospital_id,
-          stage: 5,
-          stageName: 'PICKUP_CONFIRMED - Stage 2 Route to Hospital Active',
-          pickupRoute: updatedInc.stage1_route,
-          hospitalRoute: updatedInc.stage2_route,
-          recommendations: updatedInc.hospital_recommendations
-        };
-        setActiveJourney(journey);
-        storageService.saveActiveJourney(journey);
-      }
-    } catch (err) {
-      console.error('Error updating pickup status:', err);
-    }
-    await refreshAllData();
-  };
-
-  // Complete journey upon hospital arrival
-  const completeActiveJourney = async (emergencyId) => {
-    try {
-      await driverApi.updateStatus('ARRIVED_AT_HOSPITAL');
-      if (activeJourney) {
-        const completed = {
-          ...activeJourney,
-          stage: 9,
-          stageName: 'COMPLETED - Patient Admitted',
-          isCompleted: true
-        };
-        setActiveJourney(completed);
-        storageService.saveActiveJourney(completed);
-      }
-    } catch (err) {
-      console.error('Error completing journey:', err);
-    }
-    await refreshAllData();
-  };
-
-  // Roadblock toggle (Simulates dynamic roadblock via backend API)
+  // Roadblock toggle via backend simulation API
   const toggleRoadBlock = async (uNode, vNode, isBlocked = true, reason = 'Obstacle on route') => {
     try {
       const result = await simulationApi.toggleRoadblock(uNode, vNode, isBlocked, reason);
       if (result.rerouted_incidents && result.rerouted_incidents.length > 0) {
-        // If the active emergency was rerouted, refresh it immediately
         const updated = result.rerouted_incidents[0];
         if (activeJourney && activeJourney.emergencyId === updated.id) {
           setActiveJourney(prev => ({
@@ -286,7 +287,7 @@ export function AppProvider({ children }) {
       await refreshAllData();
       return { success: true, user: authData };
     } catch (err) {
-      const errorMsg = err.response?.data?.detail || 'Invalid username or password';
+      const errorMsg = err.response?.data?.detail || err.message || 'Invalid username or password';
       return { success: false, error: errorMsg };
     }
   };
@@ -294,73 +295,22 @@ export function AppProvider({ children }) {
   const logoutUser = () => {
     authApi.logout();
     setCurrentUser(null);
+    setAdminOverview(null);
     setActiveJourney(null);
   };
 
+  // Reset entire system to backend seed data
   const resetAllData = async () => {
     try {
       await adminApi.resetSystem();
     } catch (err) {
-      console.warn('Backend reset failed, resetting local store', err);
+      console.warn('Backend reset notice', err);
     }
     storageService.resetAllData();
     await refreshAllData();
   };
 
-  const addDriver = (driverData) => {
-    const newDriver = {
-      id: `DRV_${Date.now().toString().slice(-4)}`,
-      name: driverData.name,
-      phone: driverData.phone || '+91-98220-99000',
-      stationId: driverData.stationId || 'STN_CENTRAL',
-      stationName: driverData.stationName || 'Central Station 01',
-      assignedAmbulance: driverData.assignedAmbulance || 'Unassigned',
-      status: driverData.status || 'ON_DUTY',
-      shift: driverData.shift || 'Day (08:00 - 20:00)'
-    };
-    const updated = [newDriver, ...drivers];
-    setDrivers(updated);
-    localStorage.setItem('mediroute_drivers_v1', JSON.stringify(updated));
-    return newDriver;
-  };
-
-  const removeDriver = (driverId) => {
-    const updated = drivers.filter(d => d.id !== driverId);
-    setDrivers(updated);
-    localStorage.setItem('mediroute_drivers_v1', JSON.stringify(updated));
-  };
-
-  const addAmbulance = (ambData) => {
-    const newAmb = {
-      id: `AMB_${Date.now().toString().slice(-4)}`,
-      vehicleNumber: ambData.vehicleNumber,
-      vehicle_number: ambData.vehicleNumber,
-      type: ambData.type || 'ALS',
-      vehicle_type: ambData.type || 'ALS',
-      status: 'AVAILABLE',
-      station_id: ambData.stationId || 'STN_CENTRAL',
-      stationName: ambData.stationName || 'Central Emergency Station 01',
-      assigned_driver_id: ambData.driverId || null,
-      currentNodeId: ambData.currentNodeId || 'N1',
-      locationName: ambData.locationName || 'Central Emergency Station (N1)',
-      equipment: ambData.type === 'ALS' ? ['Ventilator', 'Defibrillator', 'Oxygen'] : ['Oxygen', 'Stretcher', 'Paramedic Kit'],
-      coords: [12.9352, 77.6145]
-    };
-    const updated = [newAmb, ...ambulances];
-    setAmbulances(updated);
-    return newAmb;
-  };
-
-  const removeAmbulance = (ambulanceId) => {
-    const updated = ambulances.filter(a => a.id !== ambulanceId);
-    setAmbulances(updated);
-  };
-
-  const updateAmbulanceStatus = (ambulanceId, newStatus) => {
-    const updated = ambulances.map(a => (a.id === ambulanceId ? { ...a, status: newStatus } : a));
-    setAmbulances(updated);
-  };
-
+  // Update hospital ICU and ER capacity via admin API
   const updateHospitalBeds = async (hospitalId, availableIcu, availableEr) => {
     try {
       await adminApi.updateHospitalCapacity(hospitalId, availableIcu, availableEr);
@@ -379,6 +329,7 @@ export function AppProvider({ children }) {
       }
       return h;
     }));
+    await refreshAllData();
   };
 
   const value = {
@@ -387,13 +338,7 @@ export function AppProvider({ children }) {
     stations,
     emergencies,
     notifications,
-    drivers,
-    addDriver,
-    removeDriver,
-    addAmbulance,
-    removeAmbulance,
-    updateAmbulanceStatus,
-    updateHospitalBeds,
+    adminOverview,
     activeJourney,
     currentUser,
     roadGraph,
@@ -402,8 +347,7 @@ export function AppProvider({ children }) {
     algorithmPreference,
     setAlgorithmPreference,
     addEmergency,
-    confirmPatientPickup,
-    completeActiveJourney,
+    updateHospitalBeds,
     toggleRoadBlock,
     setEdgeTrafficMultiplier,
     markNotificationAsRead,
